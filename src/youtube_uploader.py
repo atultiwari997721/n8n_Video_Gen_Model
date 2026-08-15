@@ -47,11 +47,12 @@ def upload_video(video_path: str, title: str, description: str, token_file: str 
         }
     }
 
-    # Upload configuration
+    # Upload configuration - smaller chunk size (1MB) for stability on free hosting
     media = MediaFileUpload(
         video_path,
         mimetype='video/mp4',
-        resumable=True
+        resumable=True,
+        chunksize=1024*1024
     )
 
     request = youtube.videos().insert(
@@ -61,15 +62,25 @@ def upload_video(video_path: str, title: str, description: str, token_file: str 
     )
 
     response = None
-    print("Uploading video...")
-    while response is None:
-        status, response = request.next_chunk()
-        if status:
-            print(f"Uploaded {int(status.progress() * 100)}%.")
-            
-    print(f"Upload Complete! Video ID: {response.get('id')}")
-    print(f"Video URL: https://youtu.be/{response.get('id')}")
-    return response.get('id')
+    print("Uploading video in chunks...")
+    try:
+        while response is None:
+            status, response = request.next_chunk()
+            if status:
+                print(f"Uploaded {int(status.progress() * 100)}%.")
+                
+        print(f"Upload Complete! Video ID: {response.get('id')}")
+        print(f"Video URL: https://youtu.be/{response.get('id')}")
+        return response.get('id')
+    except Exception as e:
+        import traceback
+        print(f"ERROR details during upload: {str(e)}")
+        if hasattr(e, 'content'):
+            print(f"Response content: {e.content}")
+        if hasattr(e, 'resp'):
+            print(f"Response headers: {e.resp}")
+        print(traceback.format_exc())
+        raise e
 
 if __name__ == "__main__":
     # Test upload (make sure to use a test video and private status!)
