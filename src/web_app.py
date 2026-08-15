@@ -82,6 +82,10 @@ class UserData(BaseModel):
     github_pat: str = ""
     google_client_id: str = ""
     google_client_secret: str = ""
+    youtube_enabled: bool = False
+    youtube_hour: int = 12
+    github_enabled: bool = False
+    github_hour: int = 12
 
 @app.post("/api/user/save")
 async def save_user(data: UserData, db: Session = Depends(get_db)):
@@ -94,6 +98,12 @@ async def save_user(data: UserData, db: Session = Depends(get_db)):
     if data.github_pat: user.github_pat = data.github_pat
     if data.google_client_id: user.google_client_id = data.google_client_id
     if data.google_client_secret: user.google_client_secret = data.google_client_secret
+    
+    user.youtube_enabled = data.youtube_enabled
+    user.youtube_hour = data.youtube_hour
+    user.github_enabled = data.github_enabled
+    user.github_hour = data.github_hour
+    
     db.commit()
     return {"status": "success"}
 
@@ -101,13 +111,17 @@ async def save_user(data: UserData, db: Session = Depends(get_db)):
 async def get_user(session_id: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.session_id == session_id).first()
     if not user:
-        return {"youtube_connected": False, "gemini_key": "", "github_pat": "", "google_client_id": "", "google_client_secret": ""}
+        return {"youtube_connected": False, "gemini_key": "", "github_pat": "", "google_client_id": "", "google_client_secret": "", "youtube_enabled": False, "youtube_hour": 12, "github_enabled": False, "github_hour": 12}
     return {
         "youtube_connected": bool(user.youtube_token),
         "gemini_key": user.gemini_key or "",
         "github_pat": user.github_pat or "",
         "google_client_id": user.google_client_id or "",
-        "google_client_secret": user.google_client_secret or ""
+        "google_client_secret": user.google_client_secret or "",
+        "youtube_enabled": user.youtube_enabled or False,
+        "youtube_hour": user.youtube_hour if user.youtube_hour is not None else 12,
+        "github_enabled": user.github_enabled or False,
+        "github_hour": user.github_hour if user.github_hour is not None else 12
     }
 
 @app.get("/login")
@@ -210,23 +224,44 @@ async def trigger_github(session_id: str, background_tasks: BackgroundTasks, db:
 
 # --- VERCEL/RENDER CRON JOBS ---
 
-@app.get("/api/cron/github")
-async def cron_github(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    users = db.query(User).filter(User.gemini_key != None, User.github_pat != None).all()
-    count = 0
-    for user in users:
+@app.get("/api/cron/hourly")
+async def cron_hourly(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """
+    Master Heartbeat Endpoint for scheduling.
+    Intended to be pinged exactly once per hour by an external service (e.g., cron-job.org).
+    """
+    current_hour_utc = datetime.utcnow().hour
+    
+    # Process GitHub
+    github_users = db.query(User).filter(
+        User.gemini_key != None, 
+        User.github_pat != None, 
+        User.github_enabled == True,
+        User.github_hour == current_hour_utc
+    ).all()
+    
+    for user in github_users:
         background_tasks.add_task(run_and_log_github, user.session_id, user.gemini_key, user.github_pat)
-        count += 1
-    return {"message": f"Queued GitHub bot for {count} users"}
-
-@app.get("/api/cron/youtube")
-async def cron_youtube(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    users = db.query(User).filter(User.gemini_key != None, User.youtube_token != None).all()
-    count = 0
-    for user in users:
+        
+    # Process YouTube
+    youtube_users = db.query(User).filter(
+        User.gemini_key != None, 
+        User.youtube_token != None,
+        User.youtube_enabled == True,
+        User.youtube_hour == current_hour_utc
+    ).all()
+    
+    for user in youtube_users:
         background_tasks.add_task(run_and_log_youtube, user.session_id, user.gemini_key, user.youtube_token)
-        count += 1
-    return {"message": f"Queued YouTube pipeline for {count} users"}
+        
+    return {
+        "message": "Hourly heartbeat processed successfully",
+        "jobs_queued": {
+            "github": len(github_users),
+            "youtube": len(youtube_users)
+        },
+        "current_hour_utc": current_hour_utc
+    }
 
 @app.get("/api/logs/{session_id}")
 async def get_logs(session_id: str, db: Session = Depends(get_db)):

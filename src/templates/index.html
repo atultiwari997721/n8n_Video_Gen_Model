@@ -145,10 +145,27 @@
         </div>
 
         <!-- YouTube Card -->
-        <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="flex: 1;">
                 <h3>YouTube Shorts Engine</h3>
                 <p style="font-size: 0.9rem; max-width: 400px;">Connect your channel to enable automated daily video generation and uploading.</p>
+                
+                <div style="margin-top: 1rem; padding: 10px; background: #1a1a1a; border-radius: 6px; display: inline-block;">
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer;">
+                        <input type="checkbox" id="ytAutoEnable" onchange="saveSettings()"> Enable Daily Auto-Upload
+                    </label>
+                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.85rem; color: #aaa;">Run at (UTC):</span>
+                        <select id="ytAutoHour" onchange="saveSettings()" style="background: #333; color: white; border: 1px solid #444; padding: 4px; border-radius: 4px;">
+                            <option value="0">00:00 (Midnight)</option>
+                            <option value="4">04:00 AM</option>
+                            <option value="8">08:00 AM</option>
+                            <option value="12">12:00 PM (Noon)</option>
+                            <option value="16">04:00 PM</option>
+                            <option value="20">08:00 PM</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <button id="ytConnectBtn" class="btn btn-youtube" onclick="connectYouTube()">Connect YouTube Account</button>
@@ -157,10 +174,27 @@
         </div>
 
         <!-- GitHub Card -->
-        <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="flex: 1;">
                 <h3>GitHub Problem Bot</h3>
-                <p style="font-size: 0.9rem; max-width: 400px;">Generates Python/JS problems via Gemini and pushes them to your repo every 6 hours.</p>
+                <p style="font-size: 0.9rem; max-width: 400px;">Generates Python/JS problems via Gemini and pushes them to your repo.</p>
+                
+                <div style="margin-top: 1rem; padding: 10px; background: #1a1a1a; border-radius: 6px; display: inline-block;">
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer;">
+                        <input type="checkbox" id="ghAutoEnable" onchange="saveSettings()"> Enable Daily Auto-Push
+                    </label>
+                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.85rem; color: #aaa;">Run at (UTC):</span>
+                        <select id="ghAutoHour" onchange="saveSettings()" style="background: #333; color: white; border: 1px solid #444; padding: 4px; border-radius: 4px;">
+                            <option value="0">00:00 (Midnight)</option>
+                            <option value="4">04:00 AM</option>
+                            <option value="8">08:00 AM</option>
+                            <option value="12">12:00 PM (Noon)</option>
+                            <option value="16">04:00 PM</option>
+                            <option value="20">08:00 PM</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <button class="btn" style="background-color: #333;" onclick="triggerTest('github')">▶ Manual Test Run</button>
@@ -231,6 +265,14 @@
                     document.getElementById('googleClientSecret').value = data.google_client_secret;
                     localStorage.setItem('google_client_secret', data.google_client_secret);
                 }
+                if (data.youtube_enabled !== undefined) {
+                    document.getElementById('ytAutoEnable').checked = data.youtube_enabled;
+                    document.getElementById('ytAutoHour').value = data.youtube_hour || "12";
+                }
+                if (data.github_enabled !== undefined) {
+                    document.getElementById('ghAutoEnable').checked = data.github_enabled;
+                    document.getElementById('ghAutoHour').value = data.github_hour || "12";
+                }
             });
 
         function saveSettings() {
@@ -238,6 +280,11 @@
             const github = document.getElementById('githubPat').value;
             const googleClientId = document.getElementById('googleClientId').value;
             const googleClientSecret = document.getElementById('googleClientSecret').value;
+            
+            const ytEnabled = document.getElementById('ytAutoEnable').checked;
+            const ytHour = parseInt(document.getElementById('ytAutoHour').value);
+            const ghEnabled = document.getElementById('ghAutoEnable').checked;
+            const ghHour = parseInt(document.getElementById('ghAutoHour').value);
             
             localStorage.setItem('gemini_key', gemini);
             localStorage.setItem('github_pat', github);
@@ -253,7 +300,11 @@
                     gemini_key: gemini,
                     github_pat: github,
                     google_client_id: googleClientId,
-                    google_client_secret: googleClientSecret
+                    google_client_secret: googleClientSecret,
+                    youtube_enabled: ytEnabled,
+                    youtube_hour: ytHour,
+                    github_enabled: ghEnabled,
+                    github_hour: ghHour
                 })
             }).then(() => {
                 const status = document.getElementById('saveStatus');

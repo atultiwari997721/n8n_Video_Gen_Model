@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, Column, String, Integer, Text
+from sqlalchemy import create_engine, Column, String, Integer, Text, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./users.db")
@@ -24,6 +24,10 @@ class User(Base):
     youtube_token = Column(Text, nullable=True)
     google_client_id = Column(String, nullable=True)
     google_client_secret = Column(String, nullable=True)
+    youtube_enabled = Column(Boolean, default=False)
+    youtube_hour = Column(Integer, default=12)
+    github_enabled = Column(Boolean, default=False)
+    github_hour = Column(Integer, default=12)
 
 class ActivityLog(Base):
     __tablename__ = "activity_logs"
@@ -44,6 +48,16 @@ try:
     with engine.connect() as conn:
         conn.execute(text("ALTER TABLE users ADD COLUMN google_client_id VARCHAR;"))
         conn.execute(text("ALTER TABLE users ADD COLUMN google_client_secret VARCHAR;"))
+        conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE users ADD COLUMN youtube_enabled BOOLEAN DEFAULT FALSE;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN youtube_hour INTEGER DEFAULT 12;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN github_enabled BOOLEAN DEFAULT FALSE;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN github_hour INTEGER DEFAULT 12;"))
         conn.commit()
 except Exception:
     pass  # Columns already exist
