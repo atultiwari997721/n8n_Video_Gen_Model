@@ -47,12 +47,11 @@ def upload_video(video_path: str, title: str, description: str, token_file: str 
         }
     }
 
-    # Upload configuration - smaller chunk size (1MB) for stability on free hosting
+    # Upload configuration - use direct upload instead of resumable to avoid chunking/proxy errors on free hosting
     media = MediaFileUpload(
         video_path,
         mimetype='video/mp4',
-        resumable=True,
-        chunksize=1024*1024
+        resumable=False
     )
 
     request = youtube.videos().insert(
@@ -61,14 +60,9 @@ def upload_video(video_path: str, title: str, description: str, token_file: str 
         media_body=media
     )
 
-    response = None
-    print("Uploading video in chunks...")
+    print("Uploading video to YouTube (direct upload)...")
     try:
-        while response is None:
-            status, response = request.next_chunk()
-            if status:
-                print(f"Uploaded {int(status.progress() * 100)}%.")
-                
+        response = request.execute()
         print(f"Upload Complete! Video ID: {response.get('id')}")
         print(f"Video URL: https://youtu.be/{response.get('id')}")
         return response.get('id')
