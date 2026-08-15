@@ -27,10 +27,10 @@ def run_pipeline(api_key=None, youtube_token_json=None, callback=print):
         # Prepare description
         description = f"{quote}\n\nGenerated entirely by AI.\n#shorts #motivation #mindset #success"
         
-        # Step 2: Generate Assets
+        # Step 2: Generate Assets (Images + Audio)
         callback("\n--- STEP 2: Generating Assets ---")
-        callback(f"Quote: {quote}")
-        asset_paths = generate_assets(script_data, output_dir=assets_dir)
+        callback(f"Quote: {script_data.get('quote')}")
+        asset_paths = generate_assets(script_data, output_dir=assets_dir, callback=callback)
         audio_path = asset_paths["audio"]
         image_paths = asset_paths["images"]
         

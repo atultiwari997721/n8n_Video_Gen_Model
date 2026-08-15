@@ -12,7 +12,7 @@ def generate_audio(text: str, output_path: str):
     tts.save(output_path)
     print(f"Audio saved to {output_path}")
 
-def download_image(prompt: str, output_path: str):
+def download_image(prompt: str, output_path: str, callback=print):
     """
     Downloads an image from Pollinations.ai based on the prompt.
     """
@@ -22,9 +22,9 @@ def download_image(prompt: str, output_path: str):
     # 1080x1920 (9:16 aspect ratio), nologo=true
     url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1080&height=1920&nologo=true"
     
-    print(f"Downloading image from Pollinations.ai for prompt: '{prompt}'")
+    callback(f"Downloading image from Pollinations.ai for prompt: '{prompt}'")
     
-    max_retries = 3
+    max_retries = 5
     for attempt in range(max_retries):
         try:
             response = requests.get(url, timeout=60)
@@ -32,18 +32,19 @@ def download_image(prompt: str, output_path: str):
             
             with open(output_path, 'wb') as f:
                 f.write(response.content)
-            print(f"Image saved to {output_path}")
+            callback(f"Image saved to {output_path}")
             return # Success, exit the retry loop
         except requests.exceptions.RequestException as e:
-            print(f"Attempt {attempt + 1} failed to download image from {url}: {e}")
+            callback(f"Attempt {attempt + 1} failed (Rate Limited / Network Error): {e}")
             if attempt == max_retries - 1:
                 raise
             else:
-                print("Retrying in 5 seconds...")
+                backoff_time = 10 * (attempt + 1)
+                callback(f"Retrying in {backoff_time} seconds...")
                 import time
-                time.sleep(5)
+                time.sleep(backoff_time)
 
-def generate_assets(script_data: dict, output_dir: str = "assets"):
+def generate_assets(script_data: dict, output_dir: str = "assets", callback=print):
     """
     Orchestrates the generation of all required assets (audio and images).
     Returns a dictionary with paths to the generated files.
@@ -61,13 +62,21 @@ def generate_assets(script_data: dict, output_dir: str = "assets"):
     image_paths = []
 
     # 1. Generate Voiceover
-    generate_audio(quote, audio_path)
+    callback(f"Generating audio for text: '{quote}' using gTTS")
+    tts = gTTS(text=quote, lang='en', tld='us')
+    tts.save(audio_path)
+    callback(f"Audio saved to {audio_path}")
 
     # 2. Download Images
+    import time
     for i, prompt in enumerate(prompts):
         image_path = os.path.join(output_dir, f"image_{i+1}.jpg")
-        download_image(prompt, image_path)
+        download_image(prompt, image_path, callback=callback)
         image_paths.append(image_path)
+        # Sleep to prevent hitting Pollinations API rate limits (429 Too Many Requests)
+        if i < len(prompts) - 1:
+            callback("Waiting 5 seconds before next image download to respect rate limits...")
+            time.sleep(5)
 
     return {
         "audio": audio_path,
