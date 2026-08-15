@@ -131,6 +131,14 @@
                 <label>GitHub Personal Access Token (PAT)</label>
                 <input type="password" id="githubPat" placeholder="ghp_...">
             </div>
+            <div class="input-group">
+                <label>Google OAuth Client ID</label>
+                <input type="password" id="googleClientId" placeholder="123456-abcde.apps.googleusercontent.com">
+            </div>
+            <div class="input-group">
+                <label>Google OAuth Client Secret</label>
+                <input type="password" id="googleClientSecret" placeholder="GOCSPX-...">
+            </div>
             
             <button class="btn" onclick="saveSettings()">Save Keys to Cloud</button>
             <span id="saveStatus" style="color: var(--primary); margin-left: 10px; display: none;">Saved!</span>
@@ -167,6 +175,13 @@
     </div>
 
     <script>
+        // Check for OAuth error in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+        if (error) {
+            alert("Authentication Error: " + error + "\nMake sure you saved your Google Client ID and Secret!");
+        }
+
         // Generate a random session ID if it doesn't exist to uniquely identify this browser on Vercel
         let sessionId = localStorage.getItem('session_id');
         if (!sessionId) {
@@ -177,6 +192,8 @@
         // Load saved keys from localStorage
         document.getElementById('geminiKey').value = localStorage.getItem('gemini_key') || '';
         document.getElementById('githubPat').value = localStorage.getItem('github_pat') || '';
+        document.getElementById('googleClientId').value = localStorage.getItem('google_client_id') || '';
+        document.getElementById('googleClientSecret').value = localStorage.getItem('google_client_secret') || '';
 
         // Check OAuth status and keys from backend
         fetch(`/api/user/${sessionId}`)
@@ -196,14 +213,26 @@
                     document.getElementById('githubPat').value = data.github_pat;
                     localStorage.setItem('github_pat', data.github_pat);
                 }
+                if (data.google_client_id) {
+                    document.getElementById('googleClientId').value = data.google_client_id;
+                    localStorage.setItem('google_client_id', data.google_client_id);
+                }
+                if (data.google_client_secret) {
+                    document.getElementById('googleClientSecret').value = data.google_client_secret;
+                    localStorage.setItem('google_client_secret', data.google_client_secret);
+                }
             });
 
         function saveSettings() {
             const gemini = document.getElementById('geminiKey').value;
             const github = document.getElementById('githubPat').value;
+            const googleClientId = document.getElementById('googleClientId').value;
+            const googleClientSecret = document.getElementById('googleClientSecret').value;
             
             localStorage.setItem('gemini_key', gemini);
             localStorage.setItem('github_pat', github);
+            localStorage.setItem('google_client_id', googleClientId);
+            localStorage.setItem('google_client_secret', googleClientSecret);
 
             // Sync to backend DB
             fetch('/api/user/save', {
@@ -212,7 +241,9 @@
                 body: JSON.stringify({
                     session_id: sessionId,
                     gemini_key: gemini,
-                    github_pat: github
+                    github_pat: github,
+                    google_client_id: googleClientId,
+                    google_client_secret: googleClientSecret
                 })
             }).then(() => {
                 const status = document.getElementById('saveStatus');

@@ -27,12 +27,17 @@ templates = Jinja2Templates(directory=templates_dir)
 # For local dev, we use the file.
 CLIENT_SECRETS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "client_secrets.json")
 
-def get_oauth_flow(request: Request):
-    client_id = os.environ.get("GOOGLE_CLIENT_ID")
-    client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
+def get_oauth_flow(request: Request, session_id: str, db: Session):
+    user = db.query(User).filter(User.session_id == session_id).first()
+    client_id = user.google_client_id if user else None
+    client_secret = user.google_client_secret if user else None
+    
+    # Fallback to server env vars if user hasn't provided their own
+    if not client_id or not client_secret:
+        client_id = os.environ.get("GOOGLE_CLIENT_ID")
+        client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
     
     # Build dynamic redirect URI based on the incoming request
-    # If request is HTTPS or running on Render, ensure the scheme is https
     scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
     redirect_uri = f"{scheme}://{request.url.netloc}/oauth2callback"
     
@@ -75,6 +80,8 @@ class UserData(BaseModel):
     session_id: str
     gemini_key: str = ""
     github_pat: str = ""
+    google_client_id: str = ""
+    google_client_secret: str = ""
 
 @app.post("/api/user/save")
 async def save_user(data: UserData, db: Session = Depends(get_db)):
@@ -85,6 +92,8 @@ async def save_user(data: UserData, db: Session = Depends(get_db)):
     
     if data.gemini_key: user.gemini_key = data.gemini_key
     if data.github_pat: user.github_pat = data.github_pat
+    if data.google_client_id: user.google_client_id = data.google_client_id
+    if data.google_client_secret: user.google_client_secret = data.google_client_secret
     db.commit()
     return {"status": "success"}
 
@@ -92,11 +101,13 @@ async def save_user(data: UserData, db: Session = Depends(get_db)):
 async def get_user(session_id: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.session_id == session_id).first()
     if not user:
-        return {"youtube_connected": False, "gemini_key": "", "github_pat": ""}
+        return {"youtube_connected": False, "gemini_key": "", "github_pat": "", "google_client_id": "", "google_client_secret": ""}
     return {
         "youtube_connected": bool(user.youtube_token),
         "gemini_key": user.gemini_key or "",
-        "github_pat": user.github_pat or ""
+        "github_pat": user.github_pat or "",
+        "google_client_id": user.google_client_id or "",
+        "google_client_secret": user.google_client_secret or ""
     }
 
 @app.get("/login")

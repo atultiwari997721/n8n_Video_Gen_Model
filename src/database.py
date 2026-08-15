@@ -20,8 +20,20 @@ class User(Base):
     gemini_key = Column(String, nullable=True)
     github_pat = Column(String, nullable=True)
     youtube_token = Column(Text, nullable=True)
+    google_client_id = Column(String, nullable=True)
+    google_client_secret = Column(String, nullable=True)
 
 Base.metadata.create_all(bind=engine)
+
+# Manual migration for existing databases
+from sqlalchemy import text
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE users ADD COLUMN google_client_id VARCHAR;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN google_client_secret VARCHAR;"))
+        conn.commit()
+except Exception:
+    pass  # Columns already exist
 
 def get_db():
     db = SessionLocal()
