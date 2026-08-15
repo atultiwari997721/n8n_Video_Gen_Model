@@ -26,14 +26,28 @@ def authenticate_youtube(token_file='token.json'):
             
     return build('youtube', 'v3', credentials=creds)
 
-def upload_video(video_path: str, title: str, description: str, token_file: str = 'token.json'):
+def upload_video(video_path: str, title: str, description: str, token_file: str = "token.json", callback=print):
     """
-    Uploads a video to YouTube.
+    Uploads a video to YouTube using the provided token file.
     """
-    print(f"Starting upload for {video_path}...")
-    youtube = authenticate_youtube(token_file)
+    callback("Initializing YouTube upload...")
+    
+    creds = None
+    if os.path.exists(token_file):
+        creds = Credentials.from_authorized_user_file(token_file, SCOPES)
+        
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            callback("Refreshing expired YouTube credentials...")
+            creds.refresh(Request())
+        else:
+            callback("ERROR: Valid YouTube credentials not found.")
+            return None
 
-    # YouTube metadata
+    youtube = build('youtube', 'v3', credentials=creds)
+
+    title = title if len(title) <= 100 else title[:97] + "..."
+
     body = {
         'snippet': {
             'title': title,
@@ -60,20 +74,20 @@ def upload_video(video_path: str, title: str, description: str, token_file: str 
         media_body=media
     )
 
-    print("Uploading video to YouTube (direct upload)...")
+    callback("Uploading video to YouTube (direct upload)...")
     try:
         response = request.execute()
-        print(f"Upload Complete! Video ID: {response.get('id')}")
-        print(f"Video URL: https://youtu.be/{response.get('id')}")
+        callback(f"Upload Complete! Video ID: {response.get('id')}")
+        callback(f"Video URL: https://youtu.be/{response.get('id')}")
         return response.get('id')
     except Exception as e:
         import traceback
-        print(f"ERROR details during upload: {str(e)}")
+        callback(f"ERROR details during upload: {str(e)}")
         if hasattr(e, 'content'):
-            print(f"Response content: {e.content}")
+            callback(f"Response content: {e.content}")
         if hasattr(e, 'resp'):
-            print(f"Response headers: {e.resp}")
-        print(traceback.format_exc())
+            callback(f"Response headers: {e.resp}")
+        callback(traceback.format_exc())
         raise e
 
 if __name__ == "__main__":

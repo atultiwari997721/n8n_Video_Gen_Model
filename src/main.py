@@ -48,7 +48,7 @@ def run_pipeline(api_key=None, youtube_token_json=None, callback=print):
                 temp_token_path = temp_token_file.name
             
             try:
-                video_id = upload_video(output_video_path, title, description, token_file=temp_token_path)
+                video_id = upload_video(output_video_path, title, description, token_file=temp_token_path, callback=callback)
                 callback(f"\nPipeline completed successfully! Video ID: {video_id}")
                 callback(f"URL: https://youtu.be/{video_id}")
                 return f"https://youtu.be/{video_id}"
