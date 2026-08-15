@@ -158,54 +158,83 @@ async def oauth2callback(request: Request, db: Session = Depends(get_db)):
     
     return RedirectResponse(url="/")
 
+from fastapi import BackgroundTasks
+from src.database import ActivityLog, SessionLocal
+from datetime import datetime
+
+def run_and_log_youtube(session_id: str, gemini_key: str, youtube_token: str):
+    db = SessionLocal()
+    try:
+        url = run_pipeline(api_key=gemini_key, youtube_token_json=youtube_token)
+        log = ActivityLog(session_id=session_id, service="youtube", status="success", message="Video Generated & Uploaded", link=url, timestamp=datetime.utcnow().isoformat())
+        db.add(log)
+        db.commit()
+    except Exception as e:
+        log = ActivityLog(session_id=session_id, service="youtube", status="error", message=f"Pipeline failed: {str(e)}", timestamp=datetime.utcnow().isoformat())
+        db.add(log)
+        db.commit()
+    finally:
+        db.close()
+
+def run_and_log_github(session_id: str, gemini_key: str, github_pat: str):
+    db = SessionLocal()
+    try:
+        url = run_github_bot(api_key=gemini_key, github_pat=github_pat)
+        log = ActivityLog(session_id=session_id, service="github", status="success", message="Daily Problem Pushed", link=url, timestamp=datetime.utcnow().isoformat())
+        db.add(log)
+        db.commit()
+    except Exception as e:
+        log = ActivityLog(session_id=session_id, service="github", status="error", message=f"GitHub Bot failed: {str(e)}", timestamp=datetime.utcnow().isoformat())
+        db.add(log)
+        db.commit()
+    finally:
+        db.close()
+
 @app.get("/api/trigger/youtube")
-async def trigger_youtube(session_id: str, db: Session = Depends(get_db)):
+async def trigger_youtube(session_id: str, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.session_id == session_id).first()
     if not user or not user.gemini_key or not user.youtube_token:
         return JSONResponse(status_code=400, content={"message": "Missing API keys or YouTube connection."})
     
-    # In Vercel, this would trigger a GitHub Action. For local simulation, we run it directly.
-    # Note: If deployed on Vercel, this function will timeout if it takes >10s.
-    try:
-        run_pipeline(api_key=user.gemini_key, youtube_token_json=user.youtube_token)
-        return {"message": "YouTube Video Generated & Uploaded successfully!"}
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"message": f"Pipeline failed: {str(e)}"})
+    background_tasks.add_task(run_and_log_youtube, user.session_id, user.gemini_key, user.youtube_token)
+    return {"message": "YouTube Video Generation started in the background! Check the Activity Log soon."}
 
 @app.get("/api/trigger/github")
-async def trigger_github(session_id: str, db: Session = Depends(get_db)):
+async def trigger_github(session_id: str, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.session_id == session_id).first()
     if not user or not user.gemini_key or not user.github_pat:
         return JSONResponse(status_code=400, content={"message": "Missing Gemini or GitHub API keys."})
     
-    try:
-        run_github_bot(api_key=user.gemini_key, github_pat=user.github_pat)
-        return {"message": "GitHub problem pushed successfully!"}
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"message": f"GitHub bot failed: {str(e)}"})
+    background_tasks.add_task(run_and_log_github, user.session_id, user.gemini_key, user.github_pat)
+    return {"message": "GitHub Problem Bot started in the background! Check the Activity Log soon."}
 
-# --- VERCEL CRON JOBS ---
+# --- VERCEL/RENDER CRON JOBS ---
 
 @app.get("/api/cron/github")
-async def cron_github(db: Session = Depends(get_db)):
+async def cron_github(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     users = db.query(User).filter(User.gemini_key != None, User.github_pat != None).all()
     count = 0
     for user in users:
-        try:
-            run_github_bot(api_key=user.gemini_key, github_pat=user.github_pat)
-            count += 1
-        except:
-            pass
-    return {"message": f"Ran GitHub bot for {count} users"}
+        background_tasks.add_task(run_and_log_github, user.session_id, user.gemini_key, user.github_pat)
+        count += 1
+    return {"message": f"Queued GitHub bot for {count} users"}
 
 @app.get("/api/cron/youtube")
-async def cron_youtube(db: Session = Depends(get_db)):
+async def cron_youtube(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     users = db.query(User).filter(User.gemini_key != None, User.youtube_token != None).all()
     count = 0
     for user in users:
-        try:
-            run_pipeline(api_key=user.gemini_key, youtube_token_json=user.youtube_token)
-            count += 1
-        except:
-            pass
-    return {"message": f"Ran YouTube pipeline for {count} users"}
+        background_tasks.add_task(run_and_log_youtube, user.session_id, user.gemini_key, user.youtube_token)
+        count += 1
+    return {"message": f"Queued YouTube pipeline for {count} users"}
+
+@app.get("/api/logs/{session_id}")
+async def get_logs(session_id: str, db: Session = Depends(get_db)):
+    logs = db.query(ActivityLog).filter(ActivityLog.session_id == session_id).order_by(ActivityLog.id.desc()).limit(20).all()
+    return [{
+        "service": log.service,
+        "status": log.status,
+        "message": log.message,
+        "link": log.link,
+        "timestamp": log.timestamp
+    } for log in logs]

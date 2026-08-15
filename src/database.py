@@ -25,6 +25,17 @@ class User(Base):
     google_client_id = Column(String, nullable=True)
     google_client_secret = Column(String, nullable=True)
 
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String, index=True)
+    service = Column(String) # 'youtube' or 'github'
+    status = Column(String)  # 'success' or 'error'
+    message = Column(String)
+    link = Column(String, nullable=True)
+    timestamp = Column(String) # Stored as string ISO format for simplicity
+
 Base.metadata.create_all(bind=engine)
 
 # Manual migration for existing databases

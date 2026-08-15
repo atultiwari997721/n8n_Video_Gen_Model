@@ -104,9 +104,11 @@ def run_github_bot(api_key=None, github_pat=None):
             branch="main"
         )
         print("Successfully pushed to GitHub!")
+        return f"https://github.com/{repo.full_name}/blob/main/{file_path}"
         
     except Exception as e:
         print(f"GitHub Bot Error: {e}")
+        raise e
 
 if __name__ == "__main__":
     run_github_bot()
