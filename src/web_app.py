@@ -179,10 +179,10 @@ import threading
 from src.database import ActivityLog, SessionLocal
 from datetime import datetime
 
-def run_and_log_youtube(session_id: str, gemini_key: str, youtube_token: str, callback=print, custom_topic: str = None):
+def run_and_log_youtube(session_id: str, gemini_key: str, youtube_token: str, callback=print, custom_topic: str = None, is_exact: bool = False):
     db = SessionLocal()
     try:
-        url = run_pipeline(api_key=gemini_key, youtube_token_json=youtube_token, callback=callback, custom_topic=custom_topic)
+        url = run_pipeline(api_key=gemini_key, youtube_token_json=youtube_token, callback=callback, custom_topic=custom_topic, is_exact=is_exact)
         log = ActivityLog(session_id=session_id, service="youtube", status="success", message="Video Generated & Uploaded", link=url, timestamp=datetime.utcnow().isoformat())
         db.add(log)
         db.commit()
@@ -208,7 +208,7 @@ def run_and_log_github(session_id: str, gemini_key: str, github_pat: str, callba
         db.close()
 
 @app.get("/api/trigger/youtube")
-async def trigger_youtube(session_id: str, topic: str = None, db: Session = Depends(get_db)):
+async def trigger_youtube(session_id: str, topic: str = None, is_exact: bool = False, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.session_id == session_id).first()
     if not user or not user.gemini_key or not user.youtube_token:
         return JSONResponse(status_code=400, content={"message": "Missing API keys or YouTube connection."})
@@ -220,7 +220,7 @@ async def trigger_youtube(session_id: str, topic: str = None, db: Session = Depe
         
     def worker():
         try:
-            run_and_log_youtube(user.session_id, user.gemini_key, user.youtube_token, callback=callback, custom_topic=topic)
+            run_and_log_youtube(user.session_id, user.gemini_key, user.youtube_token, callback=callback, custom_topic=topic, is_exact=is_exact)
             callback("DONE")
         except Exception as e:
             callback(f"ERROR: {e}")

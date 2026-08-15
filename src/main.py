@@ -7,7 +7,7 @@ from src.asset_generator import generate_assets
 from src.video_editor import assemble_video
 from src.youtube_uploader import upload_video
 
-def run_pipeline(api_key=None, youtube_token_json=None, callback=print, custom_topic=None):
+def run_pipeline(api_key=None, youtube_token_json=None, callback=print, custom_topic=None, is_exact=False):
     callback("Starting Automated YouTube Shorts Pipeline...")
     
     # Define directories
@@ -17,7 +17,7 @@ def run_pipeline(api_key=None, youtube_token_json=None, callback=print, custom_t
     try:
         # Step 1: Generate Script
         callback("\n--- STEP 1: Generating Script ---")
-        script_data = generate_script(api_key=api_key, custom_topic=custom_topic)
+        script_data = generate_script(api_key=api_key, custom_topic=custom_topic, is_exact=is_exact)
         quote = script_data.get("quote", "Stay hard.")
         
         # Determine a title from the quote (first sentence)

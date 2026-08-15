@@ -7,7 +7,7 @@ class ScriptOutput(BaseModel):
     quote: str = Field(description="A 3-sentence script/quote")
     prompts: list[str] = Field(description="Exactly 1 image generation prompt describing the visual for the video")
 
-def generate_script(api_key: str = None, custom_topic: str = None) -> dict:
+def generate_script(api_key: str = None, custom_topic: str = None, is_exact: bool = False) -> dict:
     """
     Calls the Gemini API to generate a script and 1 image prompt.
     Uses a custom topic if provided, otherwise picks a random topic (Coding Tips, Motivation, Info).
@@ -20,12 +20,19 @@ def generate_script(api_key: str = None, custom_topic: str = None) -> dict:
     # Using the google-genai client
     client = genai.Client(api_key=api_key)
 
-    if custom_topic and custom_topic.strip():
+    if custom_topic and is_exact:
         prompt = (
             "You are an expert YouTube Shorts creator. "
-            f"The user has provided the following custom topic or exact script: '{custom_topic}'. "
-            "If the user provided an exact script, use it (or slightly refine it to fit a 3-sentence format). "
-            "If they provided a general topic, write a powerful, 3-sentence script about that topic. "
+            f"The user has provided the EXACT script they want to use: '{custom_topic}'. "
+            "You MUST use this exact script as the `quote` in your output. Do not change it. "
+            "Generate exactly 1 short, descriptive image generation prompt that visually matches the script. "
+            "The prompt should be suited for a realistic, cinematic aesthetic without any text or logos."
+        )
+    elif custom_topic and custom_topic.strip():
+        prompt = (
+            "You are an expert YouTube Shorts creator. "
+            f"The user has provided the following custom topic: '{custom_topic}'. "
+            "Write a powerful, 3-sentence script about that topic. "
             "Then, generate exactly 1 short, descriptive image generation prompt that visually matches the script. "
             "The prompt should be suited for a realistic, cinematic aesthetic without any text or logos."
         )

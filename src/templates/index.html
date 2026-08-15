@@ -168,7 +168,10 @@
                 </div>
             </div>
             <div style="display: flex; flex-direction: column; gap: 10px; width: 250px;">
-                <input type="text" id="youtubeCustomTopic" placeholder="Custom Topic (Optional)..." style="background: #333; color: white; border: 1px solid #444; padding: 8px; border-radius: 4px; font-size: 0.85rem;">
+                <input type="text" id="youtubeCustomTopic" placeholder="Custom Topic or Script..." style="background: #333; color: white; border: 1px solid #444; padding: 8px; border-radius: 4px; font-size: 0.85rem;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; cursor: pointer; color: #aaa;">
+                    <input type="checkbox" id="youtubeExactScript"> Exact Script (Bypass AI rewrite)
+                </label>
                 <button id="ytConnectBtn" class="btn btn-youtube" onclick="connectYouTube()">Connect YouTube Account</button>
                 <button class="btn" onclick="triggerTest('youtube')">▶ Manual Test Run</button>
             </div>
@@ -330,8 +333,12 @@
             let url = `/api/trigger/${type}?session_id=${sessionId}`;
             if (type === 'youtube') {
                 const topic = document.getElementById('youtubeCustomTopic').value;
+                const isExact = document.getElementById('youtubeExactScript').checked;
                 if (topic) {
                     url += `&topic=${encodeURIComponent(topic)}`;
+                }
+                if (isExact) {
+                    url += `&is_exact=true`;
                 }
             }
             
