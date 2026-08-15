@@ -1,11 +1,11 @@
-services:
+databases:
   # The PostgreSQL Database to store user API keys and session tokens securely
-  - type: psqldb
-    name: saas-database
+  - name: saas-database
     databaseName: saasdb
     user: saasuser
     plan: free
 
+services:
   # The FastAPI Web Service using the Dockerfile
   - type: web
     name: saas-dashboard
