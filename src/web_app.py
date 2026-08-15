@@ -111,8 +111,8 @@ async def get_user(session_id: str, db: Session = Depends(get_db)):
     }
 
 @app.get("/login")
-async def login(request: Request, session_id: str):
-    flow = get_oauth_flow(request)
+async def login(request: Request, session_id: str, db: Session = Depends(get_db)):
+    flow = get_oauth_flow(request, session_id, db)
     if not flow:
         return RedirectResponse(url="/?error=Missing+Google+OAuth+Credentials")
     
