@@ -167,7 +167,8 @@
                     </div>
                 </div>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 10px; width: 250px;">
+                <input type="text" id="youtubeCustomTopic" placeholder="Custom Topic (Optional)..." style="background: #333; color: white; border: 1px solid #444; padding: 8px; border-radius: 4px; font-size: 0.85rem;">
                 <button id="ytConnectBtn" class="btn btn-youtube" onclick="connectYouTube()">Connect YouTube Account</button>
                 <button class="btn" onclick="triggerTest('youtube')">▶ Manual Test Run</button>
             </div>
@@ -326,7 +327,15 @@
             // Scroll user down to the log window smoothly
             terminal.parentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
             
-            const eventSource = new EventSource(`/api/trigger/${type}?session_id=${sessionId}`);
+            let url = `/api/trigger/${type}?session_id=${sessionId}`;
+            if (type === 'youtube') {
+                const topic = document.getElementById('youtubeCustomTopic').value;
+                if (topic) {
+                    url += `&topic=${encodeURIComponent(topic)}`;
+                }
+            }
+            
+            const eventSource = new EventSource(url);
             
             eventSource.onmessage = function(event) {
                 let msg = event.data;
