@@ -15,3 +15,4 @@ python-multipart>=0.0.6
 PyGithub>=2.1.1
 apscheduler>=3.10.4
 sqlalchemy>=2.0.23
+psycopg2-binary>=2.9.9
