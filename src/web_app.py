@@ -173,13 +173,16 @@ async def oauth2callback(request: Request, db: Session = Depends(get_db)):
     return RedirectResponse(url="/")
 
 from fastapi import BackgroundTasks
+from fastapi.responses import StreamingResponse
+import queue
+import threading
 from src.database import ActivityLog, SessionLocal
 from datetime import datetime
 
-def run_and_log_youtube(session_id: str, gemini_key: str, youtube_token: str):
+def run_and_log_youtube(session_id: str, gemini_key: str, youtube_token: str, callback=print):
     db = SessionLocal()
     try:
-        url = run_pipeline(api_key=gemini_key, youtube_token_json=youtube_token)
+        url = run_pipeline(api_key=gemini_key, youtube_token_json=youtube_token, callback=callback)
         log = ActivityLog(session_id=session_id, service="youtube", status="success", message="Video Generated & Uploaded", link=url, timestamp=datetime.utcnow().isoformat())
         db.add(log)
         db.commit()
@@ -190,10 +193,10 @@ def run_and_log_youtube(session_id: str, gemini_key: str, youtube_token: str):
     finally:
         db.close()
 
-def run_and_log_github(session_id: str, gemini_key: str, github_pat: str):
+def run_and_log_github(session_id: str, gemini_key: str, github_pat: str, callback=print):
     db = SessionLocal()
     try:
-        url = run_github_bot(api_key=gemini_key, github_pat=github_pat)
+        url = run_github_bot(api_key=gemini_key, github_pat=github_pat, callback=callback)
         log = ActivityLog(session_id=session_id, service="github", status="success", message="Daily Problem Pushed", link=url, timestamp=datetime.utcnow().isoformat())
         db.add(log)
         db.commit()
@@ -205,22 +208,67 @@ def run_and_log_github(session_id: str, gemini_key: str, github_pat: str):
         db.close()
 
 @app.get("/api/trigger/youtube")
-async def trigger_youtube(session_id: str, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def trigger_youtube(session_id: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.session_id == session_id).first()
     if not user or not user.gemini_key or not user.youtube_token:
         return JSONResponse(status_code=400, content={"message": "Missing API keys or YouTube connection."})
     
-    background_tasks.add_task(run_and_log_youtube, user.session_id, user.gemini_key, user.youtube_token)
-    return {"message": "YouTube Video Generation started in the background! Check the Activity Log soon."}
+    q = queue.Queue()
+    
+    def callback(msg):
+        q.put(msg)
+        
+    def worker():
+        try:
+            run_and_log_youtube(user.session_id, user.gemini_key, user.youtube_token, callback=callback)
+            callback("DONE")
+        except Exception as e:
+            callback(f"ERROR: {e}")
+            callback("DONE")
+            
+    threading.Thread(target=worker).start()
+    
+    def event_stream():
+        while True:
+            msg = q.get()
+            if msg == "DONE":
+                break
+            # Convert newlines to breaks to not mess up SSE formatting
+            safe_msg = str(msg).replace('\n', '<br>')
+            yield f"data: {safe_msg}\n\n"
+            
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 @app.get("/api/trigger/github")
-async def trigger_github(session_id: str, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def trigger_github(session_id: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.session_id == session_id).first()
     if not user or not user.gemini_key or not user.github_pat:
         return JSONResponse(status_code=400, content={"message": "Missing Gemini or GitHub API keys."})
     
-    background_tasks.add_task(run_and_log_github, user.session_id, user.gemini_key, user.github_pat)
-    return {"message": "GitHub Problem Bot started in the background! Check the Activity Log soon."}
+    q = queue.Queue()
+    
+    def callback(msg):
+        q.put(msg)
+        
+    def worker():
+        try:
+            run_and_log_github(user.session_id, user.gemini_key, user.github_pat, callback=callback)
+            callback("DONE")
+        except Exception as e:
+            callback(f"ERROR: {e}")
+            callback("DONE")
+            
+    threading.Thread(target=worker).start()
+    
+    def event_stream():
+        while True:
+            msg = q.get()
+            if msg == "DONE":
+                break
+            safe_msg = str(msg).replace('\n', '<br>')
+            yield f"data: {safe_msg}\n\n"
+            
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 # --- VERCEL/RENDER CRON JOBS ---
 

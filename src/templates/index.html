@@ -320,22 +320,35 @@
 
         function triggerTest(type) {
             const terminal = document.getElementById('terminal');
-            terminal.innerHTML += `\n[System] Triggering ${type} generation via Serverless Polling...<br>`;
+            terminal.innerHTML += `\n[System] Starting ${type} generation stream...<br>`;
             terminal.scrollTop = terminal.scrollHeight;
             
             // Scroll user down to the log window smoothly
             terminal.parentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
             
-            // On Vercel, we can't use WebSockets. We use standard HTTP / Polling
-            fetch(`/api/trigger/${type}?session_id=${sessionId}`)
-                .then(r => r.json())
-                .then(data => {
-                    terminal.innerHTML += `<span style="color: #3b82f6;">${data.message}</span><br>`;
-                    terminal.scrollTop = terminal.scrollHeight;
-                })
-                .catch(err => {
-                    terminal.innerHTML += `<span style="color: var(--error);">Error: ${err}</span><br>`;
-                });
+            const eventSource = new EventSource(`/api/trigger/${type}?session_id=${sessionId}`);
+            
+            eventSource.onmessage = function(event) {
+                let msg = event.data;
+                // Simple color formatting for links and errors
+                if (msg.startsWith('http')) {
+                    msg = `<a href="${msg}" target="_blank" style="color: #3b82f6;">${msg}</a>`;
+                } else if (msg.includes('ERROR:')) {
+                    msg = `<span style="color: var(--error); font-weight: bold;">${msg}</span>`;
+                } else {
+                    msg = `<span style="color: #10b981;">${msg}</span>`;
+                }
+                
+                terminal.innerHTML += `${msg}<br>`;
+                terminal.scrollTop = terminal.scrollHeight;
+            };
+            
+            eventSource.onerror = function() {
+                terminal.innerHTML += `<span style="color: #aaa;">[System] Stream Closed.</span><br>`;
+                terminal.scrollTop = terminal.scrollHeight;
+                eventSource.close();
+                fetchLogs(); // Refresh the logs once done
+            };
         }
 
         function fetchLogs() {
