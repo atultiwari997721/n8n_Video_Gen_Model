@@ -47,7 +47,7 @@ def generate_coding_problem(api_key):
     title_line = response.text.split('\n')[0]
     safe_title = title_line.replace('#', '').strip().replace(' ', '-').lower()
     
-    return safe_title, response.text
+    return language, safe_title, response.text
 
 def run_github_bot(api_key=None, github_pat=None):
     """Main execution block for the GitHub Bot."""
@@ -81,11 +81,20 @@ def run_github_bot(api_key=None, github_pat=None):
             
         # Generate problem
         print("Generating coding problem via Gemini...")
-        safe_title, content = generate_coding_problem(api_key)
+        language, safe_title, content = generate_coding_problem(api_key)
         
-        # Create file
+        # Create folder and file
         date_str = datetime.datetime.now().strftime("%Y-%m-%d")
-        file_path = f"problems/{date_str}-{safe_title}.md"
+        folder_path = f"problems/{date_str}"
+        
+        try:
+            contents = repo.get_contents(folder_path)
+            problem_num = len(contents) + 1 if isinstance(contents, list) else 1
+        except Exception:
+            problem_num = 1
+            
+        file_name = f"Problem-{problem_num}-of-{language}.md"
+        file_path = f"{folder_path}/{file_name}"
         
         print(f"Pushing to GitHub: {file_path}")
         repo.create_file(
