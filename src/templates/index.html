@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Shorts & GitHub Bot Dashboard</title>
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --error: #ef4444;
+            --border: #334155;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem 0;
+            background: linear-gradient(to right, #10b981, #3b82f6);
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        p {
+            margin: 0;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        input {
+            padding: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover { background-color: var(--primary-hover); }
+        .btn-youtube { background-color: #ef4444; }
+        .btn-youtube:hover { background-color: #dc2626; }
+
+        .terminal {
+            background-color: #000;
+            color: #10b981;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 1rem;
+            border-radius: 8px;
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Automated SaaS Hub</h1>
+            <p>Your multi-user, cloud-synced dashboard for YouTube & GitHub automation.</p>
+        </header>
+
+        <!-- Settings Card -->
+        <div class="card">
+            <h3>User Settings (Browser Synced)</h3>
+            <p style="font-size: 0.9rem; margin-bottom: 1rem;">These keys are securely saved to your session and synced to the cloud database for background Cron jobs.</p>
+            
+            <div class="input-group">
+                <label>Gemini API Key</label>
+                <input type="password" id="geminiKey" placeholder="AIzaSy...">
+            </div>
+            <div class="input-group">
+                <label>GitHub Personal Access Token (PAT)</label>
+                <input type="password" id="githubPat" placeholder="ghp_...">
+            </div>
+            
+            <button class="btn" onclick="saveSettings()">Save Keys to Cloud</button>
+            <span id="saveStatus" style="color: var(--primary); margin-left: 10px; display: none;">Saved!</span>
+        </div>
+
+        <!-- YouTube Card -->
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3>YouTube Shorts Engine</h3>
+                <p style="font-size: 0.9rem; max-width: 400px;">Connect your channel to enable automated daily video generation and uploading.</p>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button id="ytConnectBtn" class="btn btn-youtube" onclick="connectYouTube()">Connect YouTube Account</button>
+                <button class="btn" onclick="triggerTest('youtube')">▶ Manual Test Run</button>
+            </div>
+        </div>
+
+        <!-- GitHub Card -->
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3>GitHub Problem Bot</h3>
+                <p style="font-size: 0.9rem; max-width: 400px;">Generates Python/JS problems via Gemini and pushes them to your repo every 6 hours.</p>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn" style="background-color: #333;" onclick="triggerTest('github')">▶ Manual Test Run</button>
+            </div>
+        </div>
+
+        <!-- Progress Log -->
+        <div class="card">
+            <h3 style="margin-top:0;">Live Progress Log</h3>
+            <div id="terminal" class="terminal">System Ready.<br></div>
+        </div>
+    </div>
+
+    <script>
+        // Generate a random session ID if it doesn't exist to uniquely identify this browser on Vercel
+        let sessionId = localStorage.getItem('session_id');
+        if (!sessionId) {
+            sessionId = 'sess_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('session_id', sessionId);
+        }
+
+        // Load saved keys from localStorage
+        document.getElementById('geminiKey').value = localStorage.getItem('gemini_key') || '';
+        document.getElementById('githubPat').value = localStorage.getItem('github_pat') || '';
+
+        // Check OAuth status from backend
+        fetch(`/api/user/${sessionId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.youtube_connected) {
+                    const btn = document.getElementById('ytConnectBtn');
+                    btn.innerText = "YouTube Connected ✓";
+                    btn.disabled = true;
+                    btn.style.backgroundColor = "#333";
+                }
+            });
+
+        function saveSettings() {
+            const gemini = document.getElementById('geminiKey').value;
+            const github = document.getElementById('githubPat').value;
+            
+            localStorage.setItem('gemini_key', gemini);
+            localStorage.setItem('github_pat', github);
+
+            // Sync to backend DB
+            fetch('/api/user/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    gemini_key: gemini,
+                    github_pat: github
+                })
+            }).then(() => {
+                const status = document.getElementById('saveStatus');
+                status.style.display = 'inline';
+                setTimeout(() => status.style.display = 'none', 2000);
+            });
+        }
+
+        function connectYouTube() {
+            // Redirect to backend OAuth flow, passing the session_id so the backend knows which user this is
+            window.location.href = `/login?session_id=${sessionId}`;
+        }
+
+        function triggerTest(type) {
+            const terminal = document.getElementById('terminal');
+            terminal.innerHTML += `\n[System] Triggering ${type} generation via Serverless Polling...<br>`;
+            terminal.scrollTop = terminal.scrollHeight;
+            
+            // On Vercel, we can't use WebSockets. We use standard HTTP / Polling
+            fetch(`/api/trigger/${type}?session_id=${sessionId}`)
+                .then(r => r.json())
+                .then(data => {
+                    terminal.innerHTML += `<span style="color: #3b82f6;">${data.message}</span><br>`;
+                    terminal.scrollTop = terminal.scrollHeight;
+                })
+                .catch(err => {
+                    terminal.innerHTML += `<span style="color: var(--error);">Error: ${err}</span><br>`;
+                });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.env
+client_secrets.json
+users.db
+assets/
+final_short.mp4
+token.json
