@@ -4,9 +4,9 @@ FROM python:3.12-slim
 # Set the working directory in the container
 WORKDIR /app
 
-# Install ffmpeg and clean up apt cache to keep image small
+# Install system dependencies (ffmpeg for video, gcc/libpq-dev for psycopg2)
 RUN apt-get update && \
-    apt-get install -y ffmpeg && \
+    apt-get install -y ffmpeg gcc libpq-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
