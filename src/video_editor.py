@@ -1,11 +1,15 @@
 import os
 import PIL.Image
+import random
+import glob
 
 # Monkeypatch for moviepy compatibility with Pillow >= 10.0.0
 if not hasattr(PIL.Image, 'ANTIALIAS'):
     PIL.Image.ANTIALIAS = PIL.Image.LANCZOS
 
-from moviepy.editor import AudioFileClip, ImageClip, concatenate_videoclips
+from moviepy.editor import AudioFileClip, ImageClip, concatenate_videoclips, CompositeAudioClip
+import moviepy.audio.fx.all as afx
+
 def resize_and_crop(clip, target_width, target_height):
     """
     Resizes and crops an image clip to the target dimensions (1080x1920 for Shorts),
@@ -49,7 +53,7 @@ def resize_and_crop(clip, target_width, target_height):
 
 def assemble_video(audio_path: str, image_paths: list[str], output_path: str = "final_short.mp4"):
     """
-    Assembles the audio and images into a final video.
+    Assembles the audio and images into a final video with background music.
     """
     print("Starting video assembly...")
     
@@ -60,39 +64,50 @@ def assemble_video(audio_path: str, image_paths: list[str], output_path: str = "
         if not os.path.exists(img_path):
             raise FileNotFoundError(f"Image file not found: {img_path}")
 
-    # Load audio
-    audio_clip = AudioFileClip(audio_path)
-    total_duration = audio_clip.duration
+    # Load Voiceover audio
+    voiceover_clip = AudioFileClip(audio_path)
+    total_duration = voiceover_clip.duration
     
-    # Calculate duration per image
+    # Mix Background Music if available
+    bg_music_files = glob.glob("music/*.ogg") + glob.glob("music/*.mp3")
+    if bg_music_files:
+        bg_track = random.choice(bg_music_files)
+        print(f"Applying background music: {bg_track}")
+        bg_clip = AudioFileClip(bg_track)
+        # Loop music if it's shorter than the voiceover
+        if bg_clip.duration < total_duration:
+            bg_clip = afx.audio_loop(bg_clip, duration=total_duration)
+        else:
+            bg_clip = bg_clip.subclip(0, total_duration)
+            
+        # Lower the volume of background music so voiceover is clear
+        bg_clip = bg_clip.fx(afx.volumex, 0.15)
+        
+        # Combine voiceover and background music
+        final_audio = CompositeAudioClip([bg_clip, voiceover_clip])
+    else:
+        final_audio = voiceover_clip
+    
+    # Calculate duration per image (If 1 image, it lasts the whole video!)
     num_images = len(image_paths)
     clip_duration = total_duration / num_images
     
     video_clips = []
-    
     target_w, target_h = 1080, 1920
 
     for img_path in image_paths:
         print(f"Processing image: {img_path}")
         img_clip = ImageClip(img_path)
-        
-        # Resize/Crop to 1080x1920
         processed_clip = resize_and_crop(img_clip, target_w, target_h)
-        
-        # Set duration
         processed_clip = processed_clip.set_duration(clip_duration)
-        
-        # Add basic crossfade transition if desired, or just append
         video_clips.append(processed_clip)
 
-    # Concatenate clips
     print("Concatenating clips...")
     final_video = concatenate_videoclips(video_clips, method="compose")
     
-    # Set audio
-    final_video = final_video.set_audio(audio_clip)
+    # Set final mixed audio
+    final_video = final_video.set_audio(final_audio)
     
-    # Write to file
     print(f"Writing final video to {output_path}...")
     final_video.write_videofile(
         output_path,
@@ -104,7 +119,9 @@ def assemble_video(audio_path: str, image_paths: list[str], output_path: str = "
     )
     
     # Close clips to free resources
-    audio_clip.close()
+    voiceover_clip.close()
+    if 'bg_clip' in locals():
+        bg_clip.close()
     for clip in video_clips:
         clip.close()
     final_video.close()
@@ -113,6 +130,4 @@ def assemble_video(audio_path: str, image_paths: list[str], output_path: str = "
     return output_path
 
 if __name__ == "__main__":
-    # Test execution assuming assets exist
-    # assemble_video("../assets/voiceover.mp3", ["../assets/image_1.jpg", "../assets/image_2.jpg", "../assets/image_3.jpg"])
     pass

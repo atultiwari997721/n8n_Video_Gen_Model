@@ -4,13 +4,13 @@ from google import genai
 from pydantic import BaseModel, Field
 
 class ScriptOutput(BaseModel):
-    quote: str = Field(description="A 3-sentence motivational quote")
-    prompts: list[str] = Field(description="Exactly 3 image generation prompts describing the visuals for the quote")
+    quote: str = Field(description="A 3-sentence script/quote")
+    prompts: list[str] = Field(description="Exactly 1 image generation prompt describing the visual for the video")
 
 def generate_script(api_key: str = None, custom_topic: str = None) -> dict:
     """
-    Calls the Gemini API to generate a script and 3 image prompts.
-    Uses a custom topic if provided, otherwise defaults to a random motivational quote.
+    Calls the Gemini API to generate a script and 1 image prompt.
+    Uses a custom topic if provided, otherwise picks a random topic (Coding Tips, Motivation, Info).
     """
     if not api_key:
         api_key = os.environ.get("GEMINI_API_KEY")
@@ -26,15 +26,23 @@ def generate_script(api_key: str = None, custom_topic: str = None) -> dict:
             f"The user has provided the following custom topic or exact script: '{custom_topic}'. "
             "If the user provided an exact script, use it (or slightly refine it to fit a 3-sentence format). "
             "If they provided a general topic, write a powerful, 3-sentence script about that topic. "
-            "Then, generate exactly 3 short, descriptive image generation prompts that visually match each sentence of the script. "
-            "The prompts should be suited for a realistic, cinematic aesthetic without any text or logos in the images."
+            "Then, generate exactly 1 short, descriptive image generation prompt that visually matches the script. "
+            "The prompt should be suited for a realistic, cinematic aesthetic without any text or logos."
         )
     else:
+        import random
+        topics = [
+            "a powerful coding tip for software engineers",
+            "a deep motivational quote about discipline and success",
+            "an interesting psychological fact",
+            "a stoic philosophy quote"
+        ]
+        chosen_topic = random.choice(topics)
         prompt = (
             "You are an expert YouTube Shorts creator. "
-            "Generate a powerful, 3-sentence motivational quote about success, discipline, or mindset. "
-            "Also generate exactly 3 short, descriptive image generation prompts that visually match each sentence of the quote. "
-            "The prompts should be suited for a realistic, cinematic, moody aesthetic (e.g., 'cinematic shot of a lone wolf on a snowy mountain, dark moody lighting')."
+            f"Generate a powerful, 3-sentence script about: {chosen_topic}. "
+            "Also generate exactly 1 short, descriptive image generation prompt that visually matches the overall script. "
+            "The prompt should be suited for a realistic, cinematic, moody aesthetic (e.g., 'cinematic shot of a lone wolf on a snowy mountain, dark moody lighting')."
         )
 
     print("Calling Gemini API for script generation...")
@@ -51,8 +59,8 @@ def generate_script(api_key: str = None, custom_topic: str = None) -> dict:
     # Parse the output
     try:
         output_data = json.loads(response.text)
-        if len(output_data.get("prompts", [])) != 3:
-            raise ValueError("Gemini did not return exactly 3 prompts.")
+        if len(output_data.get("prompts", [])) != 1:
+            raise ValueError("Gemini did not return exactly 1 prompt.")
         print("Script and prompts generated successfully.")
         return output_data
     except Exception as e:
