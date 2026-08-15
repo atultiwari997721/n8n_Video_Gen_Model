@@ -1,6 +1,11 @@
 import os
-from moviepy.editor import AudioFileClip, ImageClip, concatenate_videoclips
+import PIL.Image
 
+# Monkeypatch for moviepy compatibility with Pillow >= 10.0.0
+if not hasattr(PIL.Image, 'ANTIALIAS'):
+    PIL.Image.ANTIALIAS = PIL.Image.LANCZOS
+
+from moviepy.editor import AudioFileClip, ImageClip, concatenate_videoclips
 def resize_and_crop(clip, target_width, target_height):
     """
     Resizes and crops an image clip to the target dimensions (1080x1920 for Shorts),
