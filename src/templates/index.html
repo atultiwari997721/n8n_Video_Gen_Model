@@ -178,7 +178,7 @@
         document.getElementById('geminiKey').value = localStorage.getItem('gemini_key') || '';
         document.getElementById('githubPat').value = localStorage.getItem('github_pat') || '';
 
-        // Check OAuth status from backend
+        // Check OAuth status and keys from backend
         fetch(`/api/user/${sessionId}`)
             .then(r => r.json())
             .then(data => {
@@ -187,6 +187,14 @@
                     btn.innerText = "YouTube Connected ✓";
                     btn.disabled = true;
                     btn.style.backgroundColor = "#333";
+                }
+                if (data.gemini_key) {
+                    document.getElementById('geminiKey').value = data.gemini_key;
+                    localStorage.setItem('gemini_key', data.gemini_key);
+                }
+                if (data.github_pat) {
+                    document.getElementById('githubPat').value = data.github_pat;
+                    localStorage.setItem('github_pat', data.github_pat);
                 }
             });
 

@@ -27,15 +27,39 @@ templates = Jinja2Templates(directory=templates_dir)
 # For local dev, we use the file.
 CLIENT_SECRETS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "client_secrets.json")
 
-def get_oauth_flow():
-    if not os.path.exists(CLIENT_SECRETS_FILE):
-        return None
-    flow = Flow.from_client_secrets_file(
-        CLIENT_SECRETS_FILE,
-        scopes=['https://www.googleapis.com/auth/youtube.upload'],
-        redirect_uri='http://localhost:8000/oauth2callback'
-    )
-    return flow
+def get_oauth_flow(request: Request):
+    client_id = os.environ.get("GOOGLE_CLIENT_ID")
+    client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
+    
+    # Build dynamic redirect URI based on the incoming request
+    # If request is HTTPS or running on Render, ensure the scheme is https
+    scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+    redirect_uri = f"{scheme}://{request.url.netloc}/oauth2callback"
+    
+    if client_id and client_secret:
+        client_config = {
+            "web": {
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "redirect_uris": [redirect_uri]
+            }
+        }
+        flow = Flow.from_client_config(
+            client_config,
+            scopes=['https://www.googleapis.com/auth/youtube.upload'],
+            redirect_uri=redirect_uri
+        )
+        return flow
+    elif os.path.exists(CLIENT_SECRETS_FILE):
+        flow = Flow.from_client_secrets_file(
+            CLIENT_SECRETS_FILE,
+            scopes=['https://www.googleapis.com/auth/youtube.upload'],
+            redirect_uri=redirect_uri
+        )
+        return flow
+    return None
 
 global_flow_store = {}
 
@@ -68,14 +92,18 @@ async def save_user(data: UserData, db: Session = Depends(get_db)):
 async def get_user(session_id: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.session_id == session_id).first()
     if not user:
-        return {"youtube_connected": False}
-    return {"youtube_connected": bool(user.youtube_token)}
+        return {"youtube_connected": False, "gemini_key": "", "github_pat": ""}
+    return {
+        "youtube_connected": bool(user.youtube_token),
+        "gemini_key": user.gemini_key or "",
+        "github_pat": user.github_pat or ""
+    }
 
 @app.get("/login")
-async def login(session_id: str):
-    flow = get_oauth_flow()
+async def login(request: Request, session_id: str):
+    flow = get_oauth_flow(request)
     if not flow:
-        return RedirectResponse(url="/?error=Missing+client_secrets.json")
+        return RedirectResponse(url="/?error=Missing+Google+OAuth+Credentials")
     
     authorization_url, state = flow.authorization_url(
         access_type='offline',
