@@ -323,6 +323,9 @@
             terminal.innerHTML += `\n[System] Triggering ${type} generation via Serverless Polling...<br>`;
             terminal.scrollTop = terminal.scrollHeight;
             
+            // Scroll user down to the log window smoothly
+            terminal.parentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
             // On Vercel, we can't use WebSockets. We use standard HTTP / Polling
             fetch(`/api/trigger/${type}?session_id=${sessionId}`)
                 .then(r => r.json())
