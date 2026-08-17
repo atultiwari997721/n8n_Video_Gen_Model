@@ -155,15 +155,15 @@
                         <input type="checkbox" id="ytAutoEnable" onchange="saveSettings()"> Enable Daily Auto-Upload
                     </label>
                     <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 0.85rem; color: #aaa;">Run at (UTC):</span>
-                        <select id="ytAutoHour" onchange="saveSettings()" style="background: #333; color: white; border: 1px solid #444; padding: 4px; border-radius: 4px;">
-                            <option value="0">00:00 (Midnight)</option>
-                            <option value="4">04:00 AM</option>
-                            <option value="8">08:00 AM</option>
-                            <option value="12">12:00 PM (Noon)</option>
-                            <option value="16">04:00 PM</option>
-                            <option value="20">08:00 PM</option>
-                        </select>
+                        <span style="font-size: 0.85rem; color: #aaa;">Run interval:</span>
+                            <select id="ytAutoHour" onchange="saveSettings()" style="background: #333; color: white; border: 1px solid #444; padding: 4px; border-radius: 4px;">
+                                <option value="1">Every 1 Minute</option>
+                                <option value="15">Every 15 Minutes</option>
+                                <option value="60">Every 1 Hour</option>
+                                <option value="240">Every 4 Hours</option>
+                                <option value="720">Every 12 Hours</option>
+                                <option value="1440" selected>Every 24 Hours</option>
+                            </select>
                     </div>
                 </div>
             </div>
@@ -177,26 +177,33 @@
             </div>
         </div>
 
-        <!-- GitHub Card -->
-        <div class="card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-            <div style="flex: 1;">
-                <h3>GitHub Problem Bot</h3>
-                <p style="font-size: 0.9rem; max-width: 400px;">Generates Python/JS problems via Gemini and pushes them to your repo.</p>
+        <hr style="border: 1px solid #333; margin: 30px 0;">
+
+        <!-- GITHUB SECTION -->
+        <h2 style="font-size: 1.5rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            Automated LeetCode Commits
+        </h2>
+        
+        <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 300px;">
+                <p style="color: #bbb; line-height: 1.6;">Generate Python solutions to random algorithmic problems and push them to your GitHub repository to maintain a healthy commit history.</p>
                 
-                <div style="margin-top: 1rem; padding: 10px; background: #1a1a1a; border-radius: 6px; display: inline-block;">
-                    <label style="display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer;">
-                        <input type="checkbox" id="ghAutoEnable" onchange="saveSettings()"> Enable Daily Auto-Push
+                <div style="margin-top: 20px; background: #2a2a2a; padding: 15px; border-radius: 8px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 1.1rem; font-weight: bold;">
+                        <input type="checkbox" id="ghAutoToggle" onchange="saveSettings()" style="width: 18px; height: 18px; accent-color: #2b3137;">
+                        Enable Background Automation
                     </label>
                     <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 0.85rem; color: #aaa;">Run at (UTC):</span>
-                        <select id="ghAutoHour" onchange="saveSettings()" style="background: #333; color: white; border: 1px solid #444; padding: 4px; border-radius: 4px;">
-                            <option value="0">00:00 (Midnight)</option>
-                            <option value="4">04:00 AM</option>
-                            <option value="8">08:00 AM</option>
-                            <option value="12">12:00 PM (Noon)</option>
-                            <option value="16">04:00 PM</option>
-                            <option value="20">08:00 PM</option>
-                        </select>
+                        <span style="font-size: 0.85rem; color: #aaa;">Run interval:</span>
+                            <select id="ghAutoHour" onchange="saveSettings()" style="background: #333; color: white; border: 1px solid #444; padding: 4px; border-radius: 4px;">
+                                <option value="1">Every 1 Minute</option>
+                                <option value="15">Every 15 Minutes</option>
+                                <option value="60">Every 1 Hour</option>
+                                <option value="240">Every 4 Hours</option>
+                                <option value="720">Every 12 Hours</option>
+                                <option value="1440" selected>Every 24 Hours</option>
+                            </select>
                     </div>
                 </div>
             </div>

@@ -83,9 +83,9 @@ class UserData(BaseModel):
     google_client_id: str = ""
     google_client_secret: str = ""
     youtube_enabled: bool = False
-    youtube_hour: int = 12
+    youtube_hour: int = 1440
     github_enabled: bool = False
-    github_hour: int = 12
+    github_hour: int = 1440
 
 @app.post("/api/user/save")
 async def save_user(data: UserData, db: Session = Depends(get_db)):
@@ -272,43 +272,50 @@ async def trigger_github(session_id: str, db: Session = Depends(get_db)):
 
 # --- VERCEL/RENDER CRON JOBS ---
 
-@app.get("/api/cron/hourly")
-async def cron_hourly(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+@app.get("/api/cron/tick")
+async def cron_tick(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """
     Master Heartbeat Endpoint for scheduling.
-    Intended to be pinged exactly once per hour by an external service (e.g., cron-job.org).
+    Intended to be pinged exactly once per minute by an external service (e.g., cron-job.org).
     """
-    current_hour_utc = datetime.utcnow().hour
+    import time
+    current_minute_unix = int(time.time() / 60)
     
     # Process GitHub
     github_users = db.query(User).filter(
         User.gemini_key != None, 
         User.github_pat != None, 
-        User.github_enabled == True,
-        User.github_hour == current_hour_utc
+        User.github_enabled == True
     ).all()
     
+    queued_github = 0
     for user in github_users:
-        background_tasks.add_task(run_and_log_github, user.session_id, user.gemini_key, user.github_pat)
+        interval = user.github_hour if user.github_hour else 1440
+        if current_minute_unix % interval == 0:
+            background_tasks.add_task(run_and_log_github, user.session_id, user.gemini_key, user.github_pat)
+            queued_github += 1
         
     # Process YouTube
     youtube_users = db.query(User).filter(
         User.gemini_key != None, 
         User.youtube_token != None,
-        User.youtube_enabled == True,
-        User.youtube_hour == current_hour_utc
+        User.youtube_enabled == True
     ).all()
     
+    queued_youtube = 0
     for user in youtube_users:
-        background_tasks.add_task(run_and_log_youtube, user.session_id, user.gemini_key, user.youtube_token)
+        interval = user.youtube_hour if user.youtube_hour else 1440
+        if current_minute_unix % interval == 0:
+            background_tasks.add_task(run_and_log_youtube, user.session_id, user.gemini_key, user.youtube_token)
+            queued_youtube += 1
         
     return {
-        "message": "Hourly heartbeat processed successfully",
+        "message": "Minute heartbeat processed successfully",
         "jobs_queued": {
-            "github": len(github_users),
-            "youtube": len(youtube_users)
+            "github": queued_github,
+            "youtube": queued_youtube
         },
-        "current_hour_utc": current_hour_utc
+        "current_minute_unix": current_minute_unix
     }
 
 @app.get("/api/logs/{session_id}")
