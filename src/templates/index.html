@@ -6,226 +6,599 @@
     <title>SaaS Shorts & GitHub Bot Dashboard</title>
     <style>
         :root {
+            --bg-dark: #09090b;
+            --surface: rgba(24, 24, 27, 0.7);
+            --surface-hover: rgba(39, 39, 42, 0.8);
             --primary: #10b981;
-            --primary-hover: #059669;
-            --bg: #0f172a;
-            --surface: #1e293b;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
-            --error: #ef4444;
-            --border: #334155;
+            --primary-glow: rgba(16, 185, 129, 0.4);
+            --secondary: #3b82f6;
+            --text-main: #f8fafc;
+            --text-muted: #a1a1aa;
+            --border: rgba(255, 255, 255, 0.1);
+            --glass-blur: blur(12px);
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 0;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(16, 185, 129, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.05), transparent 25%);
+            color: var(--text-main);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
-            min-height: 100vh;
+            padding: 3rem 1rem;
+            line-height: 1.5;
         }
 
         .container {
             width: 100%;
-            max-width: 800px;
-            padding: 2rem;
+            max-width: 900px;
             display: flex;
             flex-direction: column;
             gap: 2rem;
+            position: relative;
+            z-index: 1;
         }
 
         header {
             text-align: center;
             margin-bottom: 1rem;
+            animation: fadeInDown 0.8s ease-out;
         }
 
         h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin: 0 0 0.5rem 0;
-            background: linear-gradient(to right, #10b981, #3b82f6);
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -0.05em;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%);
             -webkit-background-clip: text;
             color: transparent;
         }
 
-        p {
-            margin: 0;
+        header p {
             color: var(--text-muted);
-            line-height: 1.6;
+            font-size: 1.1rem;
+            max-width: 500px;
+            margin: 0 auto;
         }
 
         .card {
-            background-color: var(--surface);
+            background: var(--surface);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeInUp 0.8s ease-out both;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+            border-color: rgba(255,255,255,0.15);
+        }
+
+        /* Staggered animations */
+        .card:nth-child(2) { animation-delay: 0.1s; }
+        .card:nth-child(3) { animation-delay: 0.2s; }
+        .card:nth-child(4) { animation-delay: 0.3s; }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        .card-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .card-header svg {
+            width: 24px;
+            height: 24px;
+            color: var(--primary);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; }
         }
 
         .input-group {
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
-            margin-bottom: 1rem;
         }
 
-        input {
-            padding: 0.75rem;
-            border-radius: 6px;
+        label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        input[type="text"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: rgba(0, 0, 0, 0.2);
             border: 1px solid var(--border);
-            background: var(--bg);
-            color: var(--text);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+            padding-right: 2.5rem;
+        }
+        
+        select option {
+            background: var(--bg-dark);
+            color: var(--text-main);
         }
 
         .btn {
-            background-color: var(--primary);
+            background: linear-gradient(to right, #10b981, #059669);
             color: white;
             border: none;
-            padding: 0.75rem 1.5rem;
-            font-size: 1rem;
+            padding: 0.875rem 1.5rem;
+            font-size: 0.95rem;
             font-weight: 600;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: background-color 0.2s;
-            text-decoration: none;
-            display: inline-block;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
         }
 
-        .btn:hover { background-color: var(--primary-hover); }
-        .btn-youtube { background-color: #ef4444; }
-        .btn-youtube:hover { background-color: #dc2626; }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+        }
 
-        .terminal {
-            background-color: #000;
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-youtube {
+            background: linear-gradient(to right, #ef4444, #dc2626);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-youtube:hover {
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+
+        /* Modern Toggle Switch */
+        .toggle-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-top: 0.5rem;
+        }
+
+        .toggle-label {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .toggle-label strong {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .toggle-label span {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255,255,255,0.1);
+            transition: .3s;
+            border-radius: 34px;
+            border: 1px solid var(--border);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #fff;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+
+        /* Terminal Window */
+        .terminal-window {
+            background: #000;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .terminal-header {
+            background: rgba(255,255,255,0.05);
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .dot-red { background: #ff5f56; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #27c93f; }
+
+        .terminal-body {
+            padding: 1rem;
+            font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
             color: #10b981;
-            font-family: 'Courier New', Courier, monospace;
+            height: 250px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+
+        .terminal-body a {
+            color: var(--secondary);
+            text-decoration: none;
+        }
+        
+        .terminal-body a:hover {
+            text-decoration: underline;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .history-item {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
             padding: 1rem;
             border-radius: 8px;
-            height: 300px;
-            overflow-y: auto;
-            border: 1px solid var(--border);
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            transition: background 0.2s;
+        }
+
+        .history-item:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .history-icon {
+            font-size: 1.5rem;
+        }
+
+        .history-content {
+            flex: 1;
+        }
+
+        .history-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        .history-message {
             font-size: 0.9rem;
-            line-height: 1.5;
+        }
+
+        /* Checkbox styling */
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .checkbox-label input {
+            accent-color: var(--primary);
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Automated SaaS Hub</h1>
-            <p>Your multi-user, cloud-synced dashboard for YouTube & GitHub automation.</p>
+            <h1>SaaS Automation Hub</h1>
+            <p>Your unified dashboard for automated YouTube Shorts creation and seamless GitHub commit generation.</p>
         </header>
 
         <!-- Settings Card -->
         <div class="card">
-            <h3>User Settings (Browser Synced)</h3>
-            <p style="font-size: 0.9rem; margin-bottom: 1rem;">These keys are securely saved to your session and synced to the cloud database for background Cron jobs.</p>
+            <div class="card-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <h2>Security & Credentials</h2>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">Credentials are encrypted, stored in your session, and synced for background cron jobs.</p>
             
-            <div class="input-group">
-                <label>Gemini API Key</label>
-                <input type="password" id="geminiKey" placeholder="AIzaSy...">
-            </div>
-            <div class="input-group">
-                <label>GitHub Personal Access Token (PAT)</label>
-                <input type="password" id="githubPat" placeholder="ghp_...">
-            </div>
-            <div class="input-group">
-                <label>Google OAuth Client ID</label>
-                <input type="password" id="googleClientId" placeholder="123456-abcde.apps.googleusercontent.com">
-            </div>
-            <div class="input-group">
-                <label>Google OAuth Client Secret</label>
-                <input type="password" id="googleClientSecret" placeholder="GOCSPX-...">
+            <div class="grid-2">
+                <div class="input-group">
+                    <label>Gemini API Key</label>
+                    <input type="password" id="geminiKey" placeholder="AIzaSy...">
+                </div>
+                <div class="input-group">
+                    <label>GitHub PAT</label>
+                    <input type="password" id="githubPat" placeholder="ghp_...">
+                </div>
+                <div class="input-group">
+                    <label>Google Client ID</label>
+                    <input type="password" id="googleClientId" placeholder="123456-abcde.apps.googleusercontent.com">
+                </div>
+                <div class="input-group">
+                    <label>Google Client Secret</label>
+                    <input type="password" id="googleClientSecret" placeholder="GOCSPX-...">
+                </div>
             </div>
             
-            <button class="btn" onclick="saveSettings()">Save Keys to Cloud</button>
-            <span id="saveStatus" style="color: var(--primary); margin-left: 10px; display: none;">Saved!</span>
+            <div style="margin-top: 1.5rem; display: flex; align-items: center; gap: 1rem;">
+                <button class="btn" onclick="saveSettings()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                    Save Credentials
+                </button>
+                <span id="saveStatus" style="color: var(--primary); font-size: 0.9rem; font-weight: 500; opacity: 0; transition: opacity 0.3s;">Successfully saved! ✓</span>
+            </div>
         </div>
 
-        <!-- YouTube Card -->
-        <div class="card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-            <div style="flex: 1;">
-                <h3>YouTube Shorts Engine</h3>
-                <p style="font-size: 0.9rem; max-width: 400px;">Connect your channel to enable automated daily video generation and uploading.</p>
+        <!-- Automation Modules Grid -->
+        <div class="grid-2">
+            
+            <!-- YouTube Card -->
+            <div class="card" style="display: flex; flex-direction: column;">
+                <div class="card-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>
+                    <h2>YouTube Shorts Engine</h2>
+                </div>
                 
-                <div style="margin-top: 1rem; padding: 10px; background: #1a1a1a; border-radius: 6px; display: inline-block;">
-                    <label style="display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer;">
-                        <input type="checkbox" id="ytAutoEnable" onchange="saveSettings()"> Enable Daily Auto-Upload
+                <div class="toggle-wrapper">
+                    <div class="toggle-label">
+                        <strong>Daily Auto-Upload</strong>
+                        <span>Generates and publishes daily.</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="ytAutoEnable" onchange="saveSettings()">
+                        <span class="slider"></span>
                     </label>
-                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 0.85rem; color: #aaa;">Run interval:</span>
-                            <select id="ytAutoHour" onchange="saveSettings()" style="background: #333; color: white; border: 1px solid #444; padding: 4px; border-radius: 4px;">
-                                <option value="1">Every 1 Minute</option>
-                                <option value="15">Every 15 Minutes</option>
-                                <option value="60">Every 1 Hour</option>
-                                <option value="240">Every 4 Hours</option>
-                                <option value="720">Every 12 Hours</option>
-                                <option value="1440" selected>Every 24 Hours</option>
-                            </select>
+                </div>
+
+                <div class="input-group" style="margin-top: 1rem;">
+                    <label>Execution Frequency</label>
+                    <select id="ytAutoHour" onchange="saveSettings()">
+                        <option value="1">Every 1 Minute</option>
+                        <option value="15">Every 15 Minutes</option>
+                        <option value="60">Every 1 Hour</option>
+                        <option value="240">Every 4 Hours</option>
+                        <option value="720">Every 12 Hours</option>
+                        <option value="1440" selected>Every 24 Hours</option>
+                    </select>
+                </div>
+
+                <div style="flex-grow: 1;"></div> <!-- Spacer -->
+
+                <div class="input-group" style="margin-top: 1.5rem;">
+                    <label>Manual Override (Optional)</label>
+                    <input type="text" id="youtubeCustomTopic" placeholder="e.g. 'Motivational tech quotes'">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="youtubeExactScript"> Bypass AI (Use exact text)
+                    </label>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 1.5rem; flex-direction: column;">
+                    <button id="ytConnectBtn" class="btn btn-youtube" onclick="connectYouTube()">
+                        Authenticate YouTube
+                    </button>
+                    <button class="btn btn-outline" onclick="triggerTest('youtube')">
+                        ▶ Run Manual Generation
+                    </button>
+                </div>
+            </div>
+
+            <!-- GitHub Card -->
+            <div class="card" style="display: flex; flex-direction: column;">
+                <div class="card-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                    <h2>LeetCode Auto-Commits</h2>
+                </div>
+
+                <div class="toggle-wrapper">
+                    <div class="toggle-label">
+                        <strong>Background Commits</strong>
+                        <span>Pushes random solutions.</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="ghAutoEnable" onchange="saveSettings()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="input-group" style="margin-top: 1rem;">
+                    <label>Execution Frequency</label>
+                    <select id="ghAutoHour" onchange="saveSettings()">
+                        <option value="1">Every 1 Minute</option>
+                        <option value="15">Every 15 Minutes</option>
+                        <option value="60">Every 1 Hour</option>
+                        <option value="240">Every 4 Hours</option>
+                        <option value="720">Every 12 Hours</option>
+                        <option value="1440" selected>Every 24 Hours</option>
+                    </select>
+                </div>
+
+                <div style="flex-grow: 1;"></div> <!-- Spacer -->
+
+                <div style="display: flex; gap: 10px; margin-top: 1.5rem; flex-direction: column;">
+                    <button class="btn btn-outline" style="margin-top: auto;" onclick="triggerTest('github')">
+                        ▶ Push Manual Commit
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Terminal & Logs Grid -->
+        <div class="grid-2">
+            
+            <!-- Progress Log -->
+            <div class="card" style="padding: 1.5rem;">
+                <div class="card-header" style="margin-bottom: 1rem; border: none; padding: 0;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                    <h2>Live Console</h2>
+                </div>
+                <div class="terminal-window">
+                    <div class="terminal-header">
+                        <div class="terminal-dot dot-red"></div>
+                        <div class="terminal-dot dot-yellow"></div>
+                        <div class="terminal-dot dot-green"></div>
+                    </div>
+                    <div id="terminal" class="terminal-body">
+                        > System initialized and ready.<br>
                     </div>
                 </div>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 10px; width: 250px;">
-                <input type="text" id="youtubeCustomTopic" placeholder="Custom Topic or Script..." style="background: #333; color: white; border: 1px solid #444; padding: 8px; border-radius: 4px; font-size: 0.85rem;">
-                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; cursor: pointer; color: #aaa;">
-                    <input type="checkbox" id="youtubeExactScript"> Exact Script (Bypass AI rewrite)
-                </label>
-                <button id="ytConnectBtn" class="btn btn-youtube" onclick="connectYouTube()">Connect YouTube Account</button>
-                <button class="btn" onclick="triggerTest('youtube')">▶ Manual Test Run</button>
-            </div>
-        </div>
 
-        <hr style="border: 1px solid #333; margin: 30px 0;">
-
-        <!-- GITHUB SECTION -->
-        <h2 style="font-size: 1.5rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-            Automated LeetCode Commits
-        </h2>
-        
-        <div style="display: flex; gap: 30px; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 300px;">
-                <p style="color: #bbb; line-height: 1.6;">Generate Python solutions to random algorithmic problems and push them to your GitHub repository to maintain a healthy commit history.</p>
-                
-                <div style="margin-top: 20px; background: #2a2a2a; padding: 15px; border-radius: 8px;">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 1.1rem; font-weight: bold;">
-                        <input type="checkbox" id="ghAutoEnable" onchange="saveSettings()" style="width: 18px; height: 18px; accent-color: #2b3137;">
-                        Enable Background Automation
-                    </label>
-                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 0.85rem; color: #aaa;">Run interval:</span>
-                            <select id="ghAutoHour" onchange="saveSettings()" style="background: #333; color: white; border: 1px solid #444; padding: 4px; border-radius: 4px;">
-                                <option value="1">Every 1 Minute</option>
-                                <option value="15">Every 15 Minutes</option>
-                                <option value="60">Every 1 Hour</option>
-                                <option value="240">Every 4 Hours</option>
-                                <option value="720">Every 12 Hours</option>
-                                <option value="1440" selected>Every 24 Hours</option>
-                            </select>
+            <!-- History Logs -->
+            <div class="card" style="padding: 1.5rem; display: flex; flex-direction: column;">
+                <div class="card-header" style="margin-bottom: 1rem; border: none; padding: 0; display: flex; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        <h2>Action History</h2>
                     </div>
+                    <button class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="fetchLogs()">Refresh</button>
+                </div>
+                
+                <div id="activityLogs" class="history-list">
+                    <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 2rem 0;">Loading history...</p>
                 </div>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button class="btn" style="background-color: #333;" onclick="triggerTest('github')">▶ Manual Test Run</button>
-            </div>
-        </div>
 
-        <!-- Progress Log -->
-        <div class="card">
-            <h3 style="margin-top:0;">Live Progress Log</h3>
-            <div id="terminal" class="terminal">System Ready.<br></div>
-        </div>
-
-        <!-- Automated History Logs -->
-        <div class="card">
-            <h3 style="margin-top:0;">Automated History Logs</h3>
-            <p style="font-size: 0.9rem; margin-bottom: 1rem;">View the results of background automation and cron jobs.</p>
-            <div id="activityLogs" style="max-height: 300px; overflow-y: auto; background-color: #1e1e1e; padding: 10px; border-radius: 8px;">
-                <p style="color: #aaa; font-size: 0.9rem;">Loading history...</p>
-            </div>
-            <button class="btn" style="margin-top: 10px;" onclick="fetchLogs()">Refresh Logs</button>
         </div>
     </div>
 
@@ -256,9 +629,11 @@
             .then(data => {
                 if (data.youtube_connected) {
                     const btn = document.getElementById('ytConnectBtn');
-                    btn.innerText = "YouTube Connected ✓";
+                    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> YouTube Connected`;
                     btn.disabled = true;
-                    btn.style.backgroundColor = "#333";
+                    btn.style.background = "rgba(255,255,255,0.1)";
+                    btn.style.color = "var(--text-muted)";
+                    btn.style.boxShadow = "none";
                 }
                 if (data.gemini_key) {
                     document.getElementById('geminiKey').value = data.gemini_key;
@@ -278,11 +653,11 @@
                 }
                 if (data.youtube_enabled !== undefined) {
                     document.getElementById('ytAutoEnable').checked = data.youtube_enabled;
-                    document.getElementById('ytAutoHour').value = data.youtube_hour || "12";
+                    document.getElementById('ytAutoHour').value = data.youtube_hour || "1440";
                 }
                 if (data.github_enabled !== undefined) {
                     document.getElementById('ghAutoEnable').checked = data.github_enabled;
-                    document.getElementById('ghAutoHour').value = data.github_hour || "12";
+                    document.getElementById('ghAutoHour').value = data.github_hour || "1440";
                 }
             });
 
@@ -319,23 +694,20 @@
                 })
             }).then(() => {
                 const status = document.getElementById('saveStatus');
-                status.style.display = 'inline';
-                setTimeout(() => status.style.display = 'none', 2000);
+                status.style.opacity = '1';
+                setTimeout(() => status.style.opacity = '0', 2000);
             });
         }
 
         function connectYouTube() {
-            // Redirect to backend OAuth flow, passing the session_id so the backend knows which user this is
+            // Redirect to backend OAuth flow
             window.location.href = `/login?session_id=${sessionId}`;
         }
 
         function triggerTest(type) {
             const terminal = document.getElementById('terminal');
-            terminal.innerHTML += `\n[System] Starting ${type} generation stream...<br>`;
+            terminal.innerHTML += `\n> [System] Initiating ${type} sequence...<br>`;
             terminal.scrollTop = terminal.scrollHeight;
-            
-            // Scroll user down to the log window smoothly
-            terminal.parentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
             
             let url = `/api/trigger/${type}?session_id=${sessionId}`;
             if (type === 'youtube') {
@@ -353,21 +725,20 @@
             
             eventSource.onmessage = function(event) {
                 let msg = event.data;
-                // Simple color formatting for links and errors
                 if (msg.startsWith('http')) {
-                    msg = `<a href="${msg}" target="_blank" style="color: #3b82f6;">${msg}</a>`;
+                    msg = `<a href="${msg}" target="_blank">${msg}</a>`;
                 } else if (msg.includes('ERROR:')) {
-                    msg = `<span style="color: var(--error); font-weight: bold;">${msg}</span>`;
+                    msg = `<span style="color: var(--danger); font-weight: bold;">${msg}</span>`;
                 } else {
-                    msg = `<span style="color: #10b981;">${msg}</span>`;
+                    msg = `<span>${msg}</span>`;
                 }
                 
-                terminal.innerHTML += `${msg}<br>`;
+                terminal.innerHTML += `> ${msg}<br>`;
                 terminal.scrollTop = terminal.scrollHeight;
             };
             
             eventSource.onerror = function() {
-                terminal.innerHTML += `<span style="color: #aaa;">[System] Stream Closed.</span><br>`;
+                terminal.innerHTML += `<span style="color: var(--text-muted);">> [System] Stream Terminated.</span><br>`;
                 terminal.scrollTop = terminal.scrollHeight;
                 eventSource.close();
                 fetchLogs(); // Refresh the logs once done
@@ -380,16 +751,29 @@
                 .then(logs => {
                     const container = document.getElementById('activityLogs');
                     if (logs.length === 0) {
-                        container.innerHTML = '<p style="color: #aaa; font-size: 0.9rem;">No background activities found yet.</p>';
+                        container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 2rem 0;">No history recorded yet.</p>';
                         return;
                     }
                     container.innerHTML = logs.map(log => {
-                        const color = log.status === 'success' ? '#10b981' : '#ef4444';
-                        const icon = log.service === 'youtube' ? '🎥' : '💻';
-                        let linkHtml = log.link ? `<a href="${log.link}" target="_blank" style="color: #3b82f6; text-decoration: underline; margin-left: 10px;">[View Link]</a>` : '';
-                        return `<div style="margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 10px;">
-                            <strong style="color: ${color};">${icon} ${log.service.toUpperCase()}</strong> - <span style="font-size: 0.8rem; color: #aaa;">${new Date(log.timestamp).toLocaleString()}</span><br>
-                            <span style="font-size: 0.9rem;">${log.message}</span>${linkHtml}
+                        const isSuccess = log.status === 'success';
+                        const iconColor = isSuccess ? 'var(--primary)' : 'var(--danger)';
+                        const icon = log.service === 'youtube' 
+                            ? `<svg viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>`
+                            : `<svg viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>`;
+                        
+                        let linkHtml = log.link ? `<a href="${log.link}" target="_blank" style="color: var(--secondary); font-size: 0.85rem; text-decoration: none; margin-top: 0.25rem; display: inline-block;">View Output ↗</a>` : '';
+                        
+                        return `
+                        <div class="history-item">
+                            <div class="history-icon" style="width: 24px; height: 24px;">${icon}</div>
+                            <div class="history-content">
+                                <div class="history-meta">
+                                    <span style="font-weight: 600; color: ${isSuccess ? 'var(--text-main)' : 'var(--danger)'}">${log.service.toUpperCase()}</span>
+                                    <span>${new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                </div>
+                                <div class="history-message">${log.message}</div>
+                                ${linkHtml}
+                            </div>
                         </div>`;
                     }).join('');
                 })
