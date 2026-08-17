@@ -111,7 +111,16 @@ async def save_user(data: UserData, db: Session = Depends(get_db)):
 async def get_user(session_id: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.session_id == session_id).first()
     if not user:
-        return {"youtube_connected": False, "gemini_key": "", "github_pat": "", "google_client_id": "", "google_client_secret": "", "youtube_enabled": False, "youtube_hour": 12, "github_enabled": False, "github_hour": 12}
+        return {"youtube_connected": False, "gemini_key": "", "github_pat": "", "google_client_id": "", "google_client_secret": "", "youtube_enabled": False, "youtube_hour": 1440, "github_enabled": False, "github_hour": 1440}
+        
+    yt_hr = user.youtube_hour if user.youtube_hour is not None else 1440
+    if yt_hr not in [1, 15, 60, 240, 720, 1440]:
+        yt_hr = 1440
+        
+    gh_hr = user.github_hour if user.github_hour is not None else 1440
+    if gh_hr not in [1, 15, 60, 240, 720, 1440]:
+        gh_hr = 1440
+        
     return {
         "youtube_connected": bool(user.youtube_token),
         "gemini_key": user.gemini_key or "",
@@ -119,9 +128,9 @@ async def get_user(session_id: str, db: Session = Depends(get_db)):
         "google_client_id": user.google_client_id or "",
         "google_client_secret": user.google_client_secret or "",
         "youtube_enabled": user.youtube_enabled or False,
-        "youtube_hour": user.youtube_hour if user.youtube_hour is not None else 12,
+        "youtube_hour": yt_hr,
         "github_enabled": user.github_enabled or False,
-        "github_hour": user.github_hour if user.github_hour is not None else 12
+        "github_hour": gh_hr
     }
 
 @app.get("/login")
